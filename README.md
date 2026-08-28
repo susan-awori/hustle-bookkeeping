@@ -52,7 +52,7 @@ Region: **Frankfurt** for API, cron, and Postgres (see `DATA_RESIDENCY.md`).
    - `JWT_SECRET` (long random; **same value** on API and the audio-cleanup cron)
    - `PHONE_HASH_PEPPER` (long random; **same value** on API and cron)
    - `CORS_ORIGINS` = the static site origin, e.g. `https://hustle-web.onrender.com`
-   - `VITE_API_URL` on the static site = `https://hustle-api.onrender.com` (no trailing slash)
+   - `VITE_API_URL` on the static site = `https://hustle-api.onrender.com` (no trailing slash). The frontend also defaults to this API URL in production if the variable is omitted.
 3. `DATABASE_URL` is injected from the Frankfurt database. Do not paste it into source control.
 
 Raw audio is **not** stored unless the trader opts in. Expired opt-in files are hard-deleted by `python -m app.jobs.cleanup_audio` (cron at 02:00 UTC plus an in-process job every 6 hours).

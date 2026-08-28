@@ -42,7 +42,7 @@ const COPY = {
     micError: "Allow microphone access in your browser.",
     saveError: "Could not save.",
     translateError: "Could not translate text.",
-    networkError: "The server took too long to respond. Please try again.",
+    networkError: "The server is waking up or unavailable. Please try again in a moment.",
   },
   sw: {
     language: "English",
@@ -79,7 +79,7 @@ const COPY = {
     micError: "Ruhusu maikrofoni kwenye browser.",
     saveError: "Haikuweza kuhifadhi.",
     translateError: "Haikuweza kutafsiri maandishi.",
-    networkError: "Seva imechelewa kujibu. Tafadhali jaribu tena.",
+    networkError: "Seva inaamka au haipatikani. Tafadhali jaribu tena baada ya muda mfupi.",
   },
 };
 

@@ -1,4 +1,4 @@
-const API = import.meta.env.VITE_API_URL || "";
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "" : "https://hustle-api.onrender.com");
 
 const ACCESS = "hustle_access";
 const REFRESH = "hustle_refresh";
