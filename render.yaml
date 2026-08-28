@@ -29,7 +29,10 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: CORS_ORIGINS
-        sync: false
+        fromService:
+          type: web
+          name: hustle-web
+          property: url
       - key: ENVIRONMENT
         value: production
       - key: PYTHONUNBUFFERED
@@ -67,4 +70,11 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        sync: false
+        fromService:
+          type: web
+          name: hustle-api
+          property: url
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

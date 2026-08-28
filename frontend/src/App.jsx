@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, clearTokens, getAccess, setTokens } from "./api.js";
+import { api, clearTokens, formatApiError, getAccess, setTokens } from "./api.js";
 
 const LABELS = {
   en: { sale: "Sale", expense: "Expense", credit_given: "Credit", credit_repaid: "Debt repayment" },
@@ -38,6 +38,8 @@ const COPY = {
     date: "Date",
     empty: "No entries yet. Record your first sale.",
     loginError: "Could not log in",
+    registerError: "Could not register",
+    serverError: "Cannot reach the server. Is the API running?",
     audioError: "The audio was not understood. Try again.",
     micError: "Allow microphone access in your browser.",
     saveError: "Could not save.",
@@ -74,6 +76,8 @@ const COPY = {
     date: "Tarehe",
     empty: "Bado hakuna maandishi. Sema mauzo ya kwanza.",
     loginError: "Haikuweza kuingia",
+    registerError: "Haikuweza kusajili",
+    serverError: "Haikuweza kuunganisha na server. API inaendesha?",
     audioError: "Sauti haikueleweka. Jaribu tena.",
     micError: "Ruhusu maikrofoni kwenye browser.",
     saveError: "Haikuweza kuhifadhi.",
@@ -131,15 +135,20 @@ export default function App() {
       mode === "login"
         ? { phone_number: form.phone_number, pin: form.pin }
         : form;
-    const response = await api(path, { method: "POST", body: JSON.stringify(body) });
-    const data = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) {
-      setError(data.detail?.[0]?.msg || data.detail || copy.loginError);
-      return;
+    try {
+      const response = await api(path, { method: "POST", body: JSON.stringify(body) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(formatApiError(data, mode === "login" ? copy.loginError : copy.registerError));
+        return;
+      }
+      setTokens(data.access_token, data.refresh_token);
+      setAuthed(true);
+    } catch (err) {
+      setError(err.message || copy.serverError);
+    } finally {
+      setBusy(false);
     }
-    setTokens(data.access_token, data.refresh_token);
-    setAuthed(true);
   }
 
   async function translateTranscript() {
@@ -291,6 +300,7 @@ export default function App() {
             <input
               inputMode="tel"
               placeholder="0712 345 678"
+              autoComplete="tel"
               value={form.phone_number}
               onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
               required
@@ -304,6 +314,7 @@ export default function App() {
               pattern="\d{4,6}"
               value={form.pin}
               onChange={(e) => setForm({ ...form, pin: e.target.value })}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
               required
             />
           </label>
