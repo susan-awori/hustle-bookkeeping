@@ -1,0 +1,70 @@
+databases:
+  - name: hustle-db
+    plan: basic-256mb
+    region: frankfurt
+    databaseName: hustle
+    user: hustle
+    postgresMajorVersion: 16
+
+services:
+  - type: web
+    name: hustle-api
+    runtime: python
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hustle-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PHONE_HASH_PEPPER
+        generateValue: true
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+  - type: cron
+    name: hustle-audio-cleanup
+    runtime: python
+    region: frankfurt
+    rootDir: backend
+    schedule: "0 2 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.jobs.cleanup_audio
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hustle-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PHONE_HASH_PEPPER
+        generateValue: true
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+
+  - type: web
+    name: hustle-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false

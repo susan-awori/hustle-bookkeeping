@@ -1,0 +1,48 @@
+# Secrets — never commit real environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Audio opt-in local storage (never commit voice files)
+backend/storage/
+storage/
+*.wav
+*.mp3
+*.webm
+*.ogg
+*.m4a
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Alembic / local overrides
+*.db
+*.sqlite3

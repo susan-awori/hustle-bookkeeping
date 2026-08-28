@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: hustle
+      POSTGRES_PASSWORD: hustle
+      POSTGRES_DB: hustle
+    ports:
+      - "5432:5432"
+    volumes:
+      - hustle_pg:/var/lib/postgresql/data
+
+volumes:
+  hustle_pg:

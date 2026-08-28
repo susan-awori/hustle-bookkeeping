@@ -1,0 +1,193 @@
+:root {
+  --ink: #1c1914;
+  --paper: #f4ead7;
+  --card: #fffaf1;
+  --green: #1f7a4d;
+  --green-hot: #c43c28;
+  --line: #d9cbb0;
+  --muted: #5c564c;
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #f7f0dc, var(--paper) 40%);
+  color: var(--ink);
+}
+
+.shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+}
+
+.hero h1,
+.top h1 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 2.2rem;
+  letter-spacing: -0.03em;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--green);
+  margin: 0;
+}
+
+.lede {
+  color: var(--muted);
+}
+
+.card,
+.mic-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  margin-top: 1rem;
+  box-shadow: 0 8px 24px rgba(80, 50, 10, 0.06);
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  font-weight: 600;
+}
+
+input {
+  font: inherit;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tabs button,
+.ghost,
+.primary {
+  font: inherit;
+  border-radius: 999px;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+}
+
+.tabs button.on,
+.primary {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+
+.ghost {
+  background: transparent;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mic-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.mic {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--green);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 0 #145c38;
+}
+
+.mic.hot {
+  background: var(--green-hot);
+  box-shadow: 0 10px 0 #8a2418;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.hint,
+.transcript,
+.confirm-text {
+  color: var(--muted);
+}
+
+.transcript {
+  font-size: 1.1rem;
+  color: var(--ink);
+  min-height: 1.5rem;
+}
+
+.player {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.preview {
+  padding-left: 1.1rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.error {
+  color: #9b1c1c;
+  font-weight: 600;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.55rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+.optin {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 500;
+  gap: 0.5rem;
+}
