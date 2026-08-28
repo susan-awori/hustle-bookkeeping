@@ -54,15 +54,36 @@ export default function App() {
       mode === "login"
         ? { phone_number: form.phone_number, pin: form.pin }
         : form;
-    const response = await api(path, { method: "POST", body: JSON.stringify(body) });
-    const data = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) {
-      setError(data.detail?.[0]?.msg || data.detail || "Haikuweza kuingia");
-      return;
+    try {
+      const response = await api(path, { method: "POST", body: JSON.stringify(body) });
+      const responseText = await response.text();
+      let data = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { raw: responseText };
+      }
+      if (!response.ok) {
+        console.error("Hustle auth request failed", {
+          path,
+          status: response.status,
+          body: data,
+        });
+        setError(data.detail?.[0]?.msg || data.detail || "Haikuweza kuingia");
+        return;
+      }
+      setTokens(data.access_token, data.refresh_token);
+      setAuthed(true);
+    } catch (requestError) {
+      console.error("Hustle auth request error", {
+        path,
+        message: requestError instanceof Error ? requestError.message : String(requestError),
+        error: requestError,
+      });
+      setError("Haikuweza kuingia. Angalia console kwa maelezo.");
+    } finally {
+      setBusy(false);
     }
-    setTokens(data.access_token, data.refresh_token);
-    setAuthed(true);
   }
 
   function startLiveDraft() {
