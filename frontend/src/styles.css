@@ -103,6 +103,19 @@ input {
   align-items: center;
 }
 
+.language-switcher {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.header-actions {
+  justify-content: flex-end;
+}
+
+.translate-button {
+  margin-bottom: 0.75rem;
+}
+
 .mic-panel {
   display: flex;
   flex-direction: column;

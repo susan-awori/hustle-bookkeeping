@@ -95,6 +95,14 @@ class ConfirmLedgerRequest(StrictModel):
     entries: list[ParsedEntry] = Field(min_length=1, max_length=20)
 
 
+class TranslateRequest(StrictModel):
+    text: str = Field(min_length=1, max_length=4000)
+
+
+class TranslateResponse(StrictModel):
+    translation: str
+
+
 class LedgerEntryPublic(StrictModel):
     id: UUID
     trader_id: UUID
