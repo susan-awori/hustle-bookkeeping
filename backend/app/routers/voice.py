@@ -12,15 +12,34 @@ from app.logging_policy import get_logger, hash_trader_id
 from app.models import EntryType, Trader
 from app.rate_limit import limiter
 from app.repositories import ledger as ledger_repo
-from app.schemas import ConfirmLedgerRequest, LedgerEntryPublic, VoiceParseResponse
+from app.schemas import (
+    ConfirmLedgerRequest,
+    LedgerEntryPublic,
+    TranslateRequest,
+    TranslateResponse,
+    VoiceParseResponse,
+)
 from app.services.audio_store import persist_opt_in_audio
 from app.services.elevenlabs import ALLOWED_AUDIO_TYPES, ElevenLabsError, synthesize_speech, transcribe_audio
-from app.services.llm_parser import ParseError, parse_transcript
+from app.services.llm_parser import ParseError, parse_transcript, translate_to_english
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 logger = get_logger()
 
 MAX_AUDIO_BYTES = 5 * 1024 * 1024
+
+
+@router.post("/translate", response_model=TranslateResponse)
+@limiter.limit("20/minute")
+def translate_text(
+    request: Request,
+    payload: TranslateRequest,
+    _trader: Trader = Depends(get_current_trader),
+) -> TranslateResponse:
+    try:
+        return TranslateResponse(translation=translate_to_english(payload.text))
+    except ParseError:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not translate text")
 
 
 @router.post("/parse", response_model=VoiceParseResponse)

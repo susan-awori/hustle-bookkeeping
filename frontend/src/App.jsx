@@ -2,10 +2,83 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, clearTokens, getAccess, setTokens } from "./api.js";
 
 const LABELS = {
-  sale: "Mauzo",
-  expense: "Matumizi",
-  credit_given: "Deni",
-  credit_repaid: "Malipo ya deni",
+  en: { sale: "Sale", expense: "Expense", credit_given: "Credit", credit_repaid: "Debt repayment" },
+  sw: { sale: "Mauzo", expense: "Matumizi", credit_given: "Deni", credit_repaid: "Malipo ya deni" },
+};
+
+const COPY = {
+  en: {
+    language: "Kiswahili",
+    kicker: "Kenya · voice bookkeeping",
+    tagline: "Speak sales, expenses, and debts. Hustle keeps your books.",
+    login: "Log in",
+    register: "Register",
+    name: "Name",
+    phone: "Phone number",
+    pin: "PIN (4–6 digits)",
+    wait: "Please wait…",
+    start: "Get started",
+    logout: "Log out",
+    stop: "Stop",
+    speak: "Speak",
+    listening: "Listening… speak naturally. Example: I sold tomatoes for two hundred shillings.",
+    speakHint: "Tap, speak, then confirm the voice response.",
+    saveVoice: "Save my voice for 30 days (optional)",
+    transcript: "Transcript",
+    translate: "Translate to English",
+    translating: "Translating…",
+    understood: "I could not understand — please say it again with the amount.",
+    save: "Yes, save",
+    cancel: "Cancel",
+    books: "Books",
+    type: "Type",
+    item: "Item",
+    amount: "Amount",
+    person: "Person",
+    date: "Date",
+    empty: "No entries yet. Record your first sale.",
+    loginError: "Could not log in",
+    audioError: "The audio was not understood. Try again.",
+    micError: "Allow microphone access in your browser.",
+    saveError: "Could not save.",
+    translateError: "Could not translate text.",
+  },
+  sw: {
+    language: "English",
+    kicker: "Kenya · vitabu kwa sauti",
+    tagline: "Sema mauzo, matumizi, na deni. Hustle inaandika vitabu.",
+    login: "Ingia",
+    register: "Jisajili",
+    name: "Jina",
+    phone: "Namba ya simu",
+    pin: "PIN (tarakimu 4–6)",
+    wait: "Subiri…",
+    start: "Anza",
+    logout: "Toka",
+    stop: "Acha",
+    speak: "Sema",
+    listening: "Inasikiliza… sema kama kawaida. Mfano: niliuza nyanya kwa bob mia mbili.",
+    speakHint: "Bofya, sema, kisha thibitisha sauti inayorudi.",
+    saveVoice: "Hifadhi sauti yangu siku 30 (si lazima)",
+    transcript: "Maandishi",
+    translate: "Tafsiri kwa English",
+    translating: "Inatafsiri…",
+    understood: "Sijaelewa vizuri — sema tena na kiasi.",
+    save: "Sawa, hifadhi",
+    cancel: "Ghairi",
+    books: "Vitabu",
+    type: "Aina",
+    item: "Bidhaa",
+    amount: "Kiasi",
+    person: "Mtu",
+    date: "Tarehe",
+    empty: "Bado hakuna maandishi. Sema mauzo ya kwanza.",
+    loginError: "Haikuweza kuingia",
+    audioError: "Sauti haikueleweka. Jaribu tena.",
+    micError: "Ruhusu maikrofoni kwenye browser.",
+    saveError: "Haikuweza kuhifadhi.",
+    translateError: "Haikuweza kutafsiri maandishi.",
+  },
 };
 
 function formatKes(value) {
@@ -17,17 +90,21 @@ export default function App() {
   const [authed, setAuthed] = useState(Boolean(getAccess()));
   const [me, setMe] = useState(null);
   const [mode, setMode] = useState("login");
+  const [language, setLanguage] = useState("sw");
   const [form, setForm] = useState({ phone_number: "", pin: "", display_name: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [liveDraft, setLiveDraft] = useState("");
   const [parseResult, setParseResult] = useState(null);
+  const [translatedTranscript, setTranslatedTranscript] = useState("");
+  const [translating, setTranslating] = useState(false);
   const [ledger, setLedger] = useState({ items: [], total: 0 });
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
   const recognitionRef = useRef(null);
   const audioRef = useRef(null);
+  const copy = COPY[language];
 
   const loadMeAndBooks = useCallback(async () => {
     const meRes = await api("/api/v1/auth/me");
@@ -58,11 +135,28 @@ export default function App() {
     const data = await response.json().catch(() => ({}));
     setBusy(false);
     if (!response.ok) {
-      setError(data.detail?.[0]?.msg || data.detail || "Haikuweza kuingia");
+      setError(data.detail?.[0]?.msg || data.detail || copy.loginError);
       return;
     }
     setTokens(data.access_token, data.refresh_token);
     setAuthed(true);
+  }
+
+  async function translateTranscript() {
+    if (!parseResult?.transcript || translating) return;
+    setTranslating(true);
+    setError("");
+    const response = await api("/api/v1/voice/translate", {
+      method: "POST",
+      body: JSON.stringify({ text: parseResult.transcript }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setTranslating(false);
+    if (!response.ok) {
+      setError(payload.detail || copy.translateError);
+      return;
+    }
+    setTranslatedTranscript(payload.translation);
   }
 
   function startLiveDraft() {
@@ -109,10 +203,11 @@ export default function App() {
         const payload = await response.json().catch(() => ({}));
         setBusy(false);
         if (!response.ok) {
-          setError(payload.detail || "Sauti haikueleweka. Jaribu tena.");
+          setError(payload.detail || copy.audioError);
           return;
         }
         setParseResult(payload);
+        setTranslatedTranscript("");
         if (payload.confirmation_audio_base64) {
           const src = `data:${payload.audio_mime_type};base64,${payload.confirmation_audio_base64}`;
           if (audioRef.current) {
@@ -128,7 +223,7 @@ export default function App() {
       setLiveDraft("");
       setRecording(true);
     } catch {
-      setError("Ruhusu maikrofoni kwenye browser.");
+      setError(copy.micError);
     }
   }
 
@@ -141,10 +236,11 @@ export default function App() {
     });
     setBusy(false);
     if (!response.ok) {
-      setError("Haikuweza kuhifadhi.");
+      setError(copy.saveError);
       return;
     }
     setParseResult(null);
+    setTranslatedTranscript("");
     setLiveDraft("");
     await loadMeAndBooks();
   }
@@ -161,23 +257,28 @@ export default function App() {
   if (!authed) {
     return (
       <main className="shell">
+        <div className="language-switcher">
+          <button className="ghost" onClick={() => setLanguage(language === "sw" ? "en" : "sw")}>
+            {copy.language}
+          </button>
+        </div>
         <header className="hero">
-          <p className="kicker">Kenya · vitabu kwa sauti</p>
+          <p className="kicker">{copy.kicker}</p>
           <h1>Hustle</h1>
-          <p className="lede">Sema mauzo, matumizi, na deni. Hustle inaandika vitabu.</p>
+          <p className="lede">{copy.tagline}</p>
         </header>
         <form className="card" onSubmit={submitAuth}>
           <div className="tabs">
             <button type="button" className={mode === "login" ? "on" : ""} onClick={() => setMode("login")}>
-              Ingia
+              {copy.login}
             </button>
             <button type="button" className={mode === "register" ? "on" : ""} onClick={() => setMode("register")}>
-              Jisajili
+              {copy.register}
             </button>
           </div>
           {mode === "register" && (
             <label>
-              Jina
+              {copy.name}
               <input
                 value={form.display_name}
                 onChange={(e) => setForm({ ...form, display_name: e.target.value })}
@@ -186,7 +287,7 @@ export default function App() {
             </label>
           )}
           <label>
-            Namba ya simu
+            {copy.phone}
             <input
               inputMode="tel"
               placeholder="0712 345 678"
@@ -196,7 +297,7 @@ export default function App() {
             />
           </label>
           <label>
-            PIN (tarakimu 4–6)
+            {copy.pin}
             <input
               type="password"
               inputMode="numeric"
@@ -208,7 +309,7 @@ export default function App() {
           </label>
           {error && <p className="error">{String(error)}</p>}
           <button className="primary" disabled={busy} type="submit">
-            {busy ? "Subiri…" : mode === "login" ? "Ingia" : "Anza"}
+            {busy ? copy.wait : mode === "login" ? copy.login : copy.start}
           </button>
         </form>
       </main>
@@ -222,15 +323,20 @@ export default function App() {
           <p className="kicker">Hustle</p>
           <h1>{me?.display_name || "Mfanyabiashara"}</h1>
         </div>
-        <button
-          className="ghost"
-          onClick={() => {
-            clearTokens();
-            setAuthed(false);
-          }}
-        >
-          Toka
-        </button>
+        <div className="row header-actions">
+          <button className="ghost" onClick={() => setLanguage(language === "sw" ? "en" : "sw")}>
+            {copy.language}
+          </button>
+          <button
+            className="ghost"
+            onClick={() => {
+              clearTokens();
+              setAuthed(false);
+            }}
+          >
+            {copy.logout}
+          </button>
+        </div>
       </header>
 
       <section className="mic-panel">
@@ -241,41 +347,52 @@ export default function App() {
           disabled={busy}
           aria-pressed={recording}
         >
-          {recording ? "Acha" : "Sema"}
+          {recording ? copy.stop : copy.speak}
         </button>
         <p className="hint">
           {recording
-            ? "Inasikiliza… sema kama kawaida. Mfano: niliuza nyanya kwa bob mia mbili."
-            : "Bofya, sema, kisha thibitisha sauti inayorudi."}
+            ? copy.listening
+            : copy.speakHint}
         </p>
         <label className="optin">
           <input type="checkbox" checked={Boolean(me?.save_voice_notes)} onChange={toggleVoiceNotes} />
-          Hifadhi sauti yangu siku 30 (si lazima)
+          {copy.saveVoice}
         </label>
       </section>
 
       <section className="card">
-        <h2>Transcript</h2>
-        <p className="transcript">{parseResult?.transcript || liveDraft || "—"}</p>
+        <h2>{copy.transcript}</h2>
+        <p className="transcript">{translatedTranscript || parseResult?.transcript || liveDraft || "—"}</p>
         {parseResult && (
           <>
+            {!translatedTranscript && (
+              <button className="ghost translate-button" disabled={translating || busy} onClick={translateTranscript}>
+                {translating ? copy.translating : copy.translate}
+              </button>
+            )}
             <p className="confirm-text">{parseResult.confirmation_text}</p>
             <audio ref={audioRef} controls className="player" />
             <ul className="preview">
               {parseResult.entries.map((entry, index) => (
                 <li key={index}>
-                  <strong>{LABELS[entry.entry_type]}</strong> · {entry.item_description} · {formatKes(entry.amount_kes)}
+                  <strong>{LABELS[language][entry.entry_type]}</strong> · {entry.item_description} · {formatKes(entry.amount_kes)}
                   {entry.counterparty_name ? ` · ${entry.counterparty_name}` : ""}
                 </li>
               ))}
             </ul>
-            {parseResult.needs_clarification && <p className="error">Sijaelewa vizuri — sema tena na kiasi.</p>}
+            {parseResult.needs_clarification && <p className="error">{copy.understood}</p>}
             <div className="row">
               <button className="primary" disabled={busy || !parseResult.entries.length} onClick={confirmBooks}>
-                Sawa, hifadhi
+                {copy.save}
               </button>
-              <button className="ghost" onClick={() => setParseResult(null)}>
-                Ghairi
+              <button
+                className="ghost"
+                onClick={() => {
+                  setParseResult(null);
+                  setTranslatedTranscript("");
+                }}
+              >
+                {copy.cancel}
               </button>
             </div>
           </>
@@ -283,22 +400,22 @@ export default function App() {
       </section>
 
       <section className="card">
-        <h2>Vitabu ({ledger.total})</h2>
+        <h2>{copy.books} ({ledger.total})</h2>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Aina</th>
-                <th>Bidhaa</th>
-                <th>Kiasi</th>
-                <th>Mtu</th>
-                <th>Tarehe</th>
+                <th>{copy.type}</th>
+                <th>{copy.item}</th>
+                <th>{copy.amount}</th>
+                <th>{copy.person}</th>
+                <th>{copy.date}</th>
               </tr>
             </thead>
             <tbody>
               {ledger.items.map((row) => (
                 <tr key={row.id}>
-                  <td>{LABELS[row.entry_type]}</td>
+                  <td>{LABELS[language][row.entry_type]}</td>
                   <td>{row.item_description}</td>
                   <td>{formatKes(row.amount_kes)}</td>
                   <td>{row.counterparty_name || "—"}</td>
@@ -307,7 +424,7 @@ export default function App() {
               ))}
               {!ledger.items.length && (
                 <tr>
-                  <td colSpan={5}>Bado hakuna maandishi. Sema mauzo ya kwanza.</td>
+                  <td colSpan={5}>{copy.empty}</td>
                 </tr>
               )}
             </tbody>

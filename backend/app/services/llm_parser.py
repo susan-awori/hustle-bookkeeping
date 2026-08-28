@@ -50,6 +50,25 @@ class ParseError(RuntimeError):
     pass
 
 
+def translate_to_english(text: str) -> str:
+    settings = get_settings()
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    message = client.messages.create(
+        model=settings.anthropic_model,
+        max_tokens=800,
+        system=(
+            "You translate Kenyan Kiswahili, Sheng, and mixed Kiswahili-English into clear, "
+            "natural English. Preserve names, numbers, currency, and meaning. Return only the "
+            "translation, with no explanation or quotation marks."
+        ),
+        messages=[{"role": "user", "content": text}],
+    )
+    text_blocks = [block.text for block in message.content if getattr(block, "type", None) == "text"]
+    if not text_blocks or not text_blocks[0].strip():
+        raise ParseError("Empty translation response")
+    return text_blocks[0].strip()
+
+
 def parse_transcript(transcript: str) -> tuple[list[ParsedEntry], str, bool]:
     settings = get_settings()
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
