@@ -2,6 +2,7 @@ const API = import.meta.env.VITE_API_URL || "";
 
 const ACCESS = "hustle_access";
 const REFRESH = "hustle_refresh";
+const REQUEST_TIMEOUT_MS = 20000;
 
 export function getAccess() {
   return sessionStorage.getItem(ACCESS);
@@ -20,11 +21,19 @@ export function clearTokens() {
 async function refreshTokens() {
   const refresh = sessionStorage.getItem(REFRESH);
   if (!refresh) return false;
-  const response = await fetch(`${API}/api/v1/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refresh }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetch(`${API}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refresh }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) {
     clearTokens();
     return false;
@@ -41,7 +50,18 @@ export async function api(path, options = {}, retry = true) {
   if (options.body && !(options.body instanceof FormData) && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
-  const response = await fetch(`${API}${path}`, { ...options, headers });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetch(`${API}${path}`, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (response.status === 401 && retry) {
     const ok = await refreshTokens();
     if (ok) return api(path, options, false);

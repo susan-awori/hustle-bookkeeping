@@ -42,6 +42,7 @@ const COPY = {
     micError: "Allow microphone access in your browser.",
     saveError: "Could not save.",
     translateError: "Could not translate text.",
+    networkError: "The server took too long to respond. Please try again.",
   },
   sw: {
     language: "English",
@@ -78,6 +79,7 @@ const COPY = {
     micError: "Ruhusu maikrofoni kwenye browser.",
     saveError: "Haikuweza kuhifadhi.",
     translateError: "Haikuweza kutafsiri maandishi.",
+    networkError: "Seva imechelewa kujibu. Tafadhali jaribu tena.",
   },
 };
 
@@ -131,15 +133,20 @@ export default function App() {
       mode === "login"
         ? { phone_number: form.phone_number, pin: form.pin }
         : form;
-    const response = await api(path, { method: "POST", body: JSON.stringify(body) });
-    const data = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) {
-      setError(data.detail?.[0]?.msg || data.detail || copy.loginError);
-      return;
+    try {
+      const response = await api(path, { method: "POST", body: JSON.stringify(body) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.detail?.[0]?.msg || data.detail || copy.loginError);
+        return;
+      }
+      setTokens(data.access_token, data.refresh_token);
+      setAuthed(true);
+    } catch (requestError) {
+      setError(requestError.name === "AbortError" ? copy.networkError : copy.loginError);
+    } finally {
+      setBusy(false);
     }
-    setTokens(data.access_token, data.refresh_token);
-    setAuthed(true);
   }
 
   async function translateTranscript() {
