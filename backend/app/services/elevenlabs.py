@@ -23,6 +23,8 @@ class ElevenLabsError(RuntimeError):
 
 def transcribe_audio(audio_bytes: bytes, content_type: str, filename: str = "take.webm") -> str:
     settings = get_settings()
+    if not settings.elevenlabs_api_key.strip():
+        raise ElevenLabsError("ElevenLabs API key is not configured")
     headers = {"xi-api-key": settings.elevenlabs_api_key}
     data = {"model_id": "scribe_v1", "language_code": "sw"}
     files = {"file": (filename, audio_bytes, content_type.split(";")[0])}
@@ -42,6 +44,8 @@ def transcribe_audio(audio_bytes: bytes, content_type: str, filename: str = "tak
 
 def synthesize_speech(text: str) -> bytes:
     settings = get_settings()
+    if not settings.elevenlabs_api_key.strip():
+        raise ElevenLabsError("ElevenLabs API key is not configured")
     url = TTS_URL_TEMPLATE.format(voice_id=settings.elevenlabs_voice_id)
     headers = {
         "xi-api-key": settings.elevenlabs_api_key,

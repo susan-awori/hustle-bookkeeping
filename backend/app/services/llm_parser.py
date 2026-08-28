@@ -52,6 +52,8 @@ class ParseError(RuntimeError):
 
 def translate_to_english(text: str) -> str:
     settings = get_settings()
+    if not settings.anthropic_api_key.strip():
+        raise ParseError("Anthropic API key is not configured")
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     message = client.messages.create(
         model=settings.anthropic_model,
@@ -71,6 +73,8 @@ def translate_to_english(text: str) -> str:
 
 def parse_transcript(transcript: str) -> tuple[list[ParsedEntry], str, bool]:
     settings = get_settings()
+    if not settings.anthropic_api_key.strip():
+        raise ParseError("Anthropic API key is not configured")
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     message = client.messages.create(
         model=settings.anthropic_model,

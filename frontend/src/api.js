@@ -1,7 +1,18 @@
-const API = import.meta.env.VITE_API_URL || "";
+function normalizeApiBase(raw) {
+  const value = (raw || "").trim().replace(/\/+$/, "");
+  if (!value) return "";
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+  return `https://${value}`;
+}
+
+const API = normalizeApiBase(import.meta.env.VITE_API_URL);
 
 const ACCESS = "hustle_access";
 const REFRESH = "hustle_refresh";
+
+export function getApiBase() {
+  return API;
+}
 
 export function getAccess() {
   return sessionStorage.getItem(ACCESS);
@@ -15,6 +26,16 @@ export function setTokens(access, refresh) {
 export function clearTokens() {
   sessionStorage.removeItem(ACCESS);
   sessionStorage.removeItem(REFRESH);
+}
+
+export function formatApiError(data, fallback = "Something went wrong") {
+  if (!data) return fallback;
+  if (typeof data.detail === "string") return data.detail;
+  if (Array.isArray(data.detail) && data.detail.length) {
+    return data.detail.map((item) => item.msg || String(item)).join(" ");
+  }
+  if (typeof data.message === "string") return data.message;
+  return fallback;
 }
 
 async function refreshTokens() {
@@ -41,7 +62,17 @@ export async function api(path, options = {}, retry = true) {
   if (options.body && !(options.body instanceof FormData) && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
-  const response = await fetch(`${API}${path}`, { ...options, headers });
+
+  let response;
+  try {
+    response = await fetch(`${API}${path}`, { ...options, headers });
+  } catch {
+    const hint = import.meta.env.DEV
+      ? "Cannot reach the API. Start Postgres, run the backend on port 8000, then refresh."
+      : "Cannot reach the server. Check your connection and try again.";
+    throw new Error(hint);
+  }
+
   if (response.status === 401 && retry) {
     const ok = await refreshTokens();
     if (ok) return api(path, options, false);

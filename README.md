@@ -6,7 +6,7 @@ Data handling is documented first in [`DATA_MAP.md`](DATA_MAP.md) and [`DATA_RES
 
 ## Local setup
 
-1. Copy `.env.example` to `backend/.env` and replace every `replace-` value with real secrets (32+ random characters for `JWT_SECRET` and `PHONE_HASH_PEPPER`).
+1. Copy `.env.example` to `backend/.env`. The example includes dev-ready `JWT_SECRET` and `PHONE_HASH_PEPPER` values so auth works locally without voice API keys.
 2. Start Postgres:
 
 ```bash
@@ -51,8 +51,8 @@ Region: **Frankfurt** for API, cron, and Postgres (see `DATA_RESIDENCY.md`).
    - `ANTHROPIC_API_KEY`
    - `JWT_SECRET` (long random; **same value** on API and the audio-cleanup cron)
    - `PHONE_HASH_PEPPER` (long random; **same value** on API and cron)
-   - `CORS_ORIGINS` = the static site origin, e.g. `https://hustle-web.onrender.com`
-   - `VITE_API_URL` on the static site = `https://hustle-api.onrender.com` (no trailing slash)
+   - `CORS_ORIGINS` is wired automatically from the static site when using `render.yaml`
+   - `VITE_API_URL` on the static site is wired automatically from the API service
 3. `DATABASE_URL` is injected from the Frankfurt database. Do not paste it into source control.
 
 Raw audio is **not** stored unless the trader opts in. Expired opt-in files are hard-deleted by `python -m app.jobs.cleanup_audio` (cron at 02:00 UTC plus an in-process job every 6 hours).
