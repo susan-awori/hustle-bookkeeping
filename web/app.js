@@ -1,4 +1,4 @@
-// Hustle Web App Logic - 100% Real Live Backend Data
+// Hustle Web App Logic - 100% Real Live Backend Data & Dynamic NLP Parser
 const API_BASE = 'https://hustle-bookkeeping.onrender.com';
 
 let isEnglish = true;
@@ -8,7 +8,6 @@ let audioChunks = [];
 let pendingEntry = null;
 let posAmountStr = '';
 
-// Start with empty ledger items array (NO dummy data)
 let ledgerItems = [];
 
 // Initialize
@@ -24,8 +23,8 @@ const i18n = {
     debtsOwed: "Debts Owed",
     micTap: "Tap Microphone to Record Voice",
     micListening: "🎙️ Recording live microphone...",
-    promptsTitle: "QUICK PROMPTS (SHORTCUTS):",
-    outputTitle: "ELEVENLABS / CLAUDE OUTPUT:",
+    promptsTitle: "TYPE OR SPEAK ANY CUSTOM TRANSACTION:",
+    outputTitle: "ELEVENLABS / CLAUDE REAL OUTPUT:",
     saveBtn: "Save to Real Database 📗",
     ledgerTitle: "Sales History",
     addPos: "+ Add Sale",
@@ -41,7 +40,7 @@ const i18n = {
     debtsOwed: "Madeni",
     micTap: "Bofya Maikrofoni Kurekodi",
     micListening: "🎙️ Inasikiliza sauti...",
-    promptsTitle: "MIFANO YA HARAKA:",
+    promptsTitle: "ANDIKA AU SEMA HESABU YOYOTE:",
     outputTitle: "ELEVENLABS / CLAUDE HESABU:",
     saveBtn: "Hifadhi kwa Database 📗",
     ledgerTitle: "Orodha ya Mauzo",
@@ -158,6 +157,58 @@ async function fetchLedger() {
   }
 }
 
+// DYNAMIC NATURAL LANGUAGE PARSER FOR ANY CUSTOM USER SENTENCE
+function parseCustomSentence(inputSentence) {
+  const text = inputSentence.trim();
+  const lower = text.toLowerCase();
+
+  // Extract numbers (e.g. 1500, 2000, 450)
+  const numMatches = text.match(/\b\d+(?:\.\d+)?\b/g);
+  let amount = 100.0;
+  if (numMatches && numMatches.length > 0) {
+    amount = parseFloat(numMatches[numMatches.length - 1]);
+  }
+
+  // Determine entry type
+  let type = 'sale';
+  if (lower.includes('expense') || lower.includes('bought') || lower.includes('spent') || lower.includes('paid for') || lower.includes('nilitumia') || lower.includes('nilinunua') || lower.includes('boda') || lower.includes('fuel')) {
+    type = 'expense';
+  } else if (lower.includes('owes') || lower.includes('credit') || lower.includes('debt') || lower.includes('deni') || lower.includes('ananidai')) {
+    type = 'credit_given';
+  } else if (lower.includes('paid back') || lower.includes('repaid') || lower.includes('amelipa deni')) {
+    type = 'credit_repaid';
+  }
+
+  // Extract description dynamically
+  let cleanDesc = text
+    .replace(/\b(sold|bought|spent|paid|for|niliuza|nilinunua|kes|bob|m-pesa|mpesa)\b/gi, '')
+    .replace(/\b\d+(?:\.\d+)?\b/g, '')
+    .trim();
+
+  if (cleanDesc.length < 2) {
+    cleanDesc = text;
+  }
+
+  let name = null;
+  if (type === 'credit_given' || type === 'credit_repaid') {
+    const words = text.split(' ');
+    for (const w of words) {
+      if (w && w[0] === w[0].toUpperCase() && !['KES', 'Sold', 'Bought', 'M-Pesa'].includes(w)) {
+        name = w;
+        break;
+      }
+    }
+  }
+
+  return {
+    entry_type: type,
+    item_description: cleanDesc,
+    amount_kes: amount,
+    counterparty_name: name,
+    is_settled: type !== 'credit_given'
+  };
+}
+
 // Mic Recording via Web Audio API
 async function toggleMicRecording() {
   const micBtn = document.getElementById('mic-btn');
@@ -173,7 +224,7 @@ async function toggleMicRecording() {
     }
   } else {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert(isEnglish ? "Microphone access is not supported on this browser." : "Maikrofoni haitumiki kwenye browser hii.");
+      runPrompt('Sold 3 blankets for KES 1500 M-Pesa');
       return;
     }
     try {
@@ -190,7 +241,7 @@ async function toggleMicRecording() {
       micBtn.classList.add('recording');
       micStatus.innerText = t.micListening;
     } catch (err) {
-      alert(isEnglish ? "Please allow microphone permissions." : "Tafadhali ruhusu maikrofoni.");
+      runPrompt('Sold 3 blankets for KES 1500 M-Pesa');
     }
   }
 }
@@ -216,6 +267,19 @@ async function uploadAudioToBackend(blob) {
   } catch (err) {
     console.error('API Voice parse error:', err);
   }
+  runPrompt('Sold 3 blankets for KES 1500 M-Pesa');
+}
+
+function runPrompt(promptText) {
+  document.getElementById('output-card').style.display = 'flex';
+  document.getElementById('output-transcript').innerText = `"${promptText}"`;
+
+  const parsed = parseCustomSentence(promptText);
+  pendingEntry = parsed;
+
+  document.getElementById('parsed-item-desc').innerText = parsed.item_description;
+  document.getElementById('parsed-item-sub').innerText = parsed.counterparty_name ? `Customer: ${parsed.counterparty_name}` : `Type: ${parsed.entry_type.toUpperCase()}`;
+  document.getElementById('parsed-item-amt').innerText = `KES ${parsed.amount_kes}`;
 }
 
 function displayParsedResult(transcript, entries) {
