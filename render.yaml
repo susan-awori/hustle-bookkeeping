@@ -1,11 +1,3 @@
-databases:
-  - name: hustle-db
-    plan: basic-256mb
-    region: frankfurt
-    databaseName: hustle
-    user: hustle
-    postgresMajorVersion: 16
-
 services:
   - type: web
     name: hustle-api
@@ -17,44 +9,14 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: hustle-db
-          property: connectionString
+        value: "sqlite:///./hustle.db"
       - key: JWT_SECRET
-        generateValue: true
+        value: "hustle-secret-key-production-32-chars-long"
       - key: PHONE_HASH_PEPPER
-        generateValue: true
-      - key: ELEVENLABS_API_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
+        value: "hustle-pepper-secret-32-chars-long"
       - key: CORS_ORIGINS
         value: "*"
       - key: ENVIRONMENT
-        value: production
+        value: "production"
       - key: PYTHONUNBUFFERED
         value: "1"
-
-  - type: cron
-    name: hustle-audio-cleanup
-    runtime: python
-    region: frankfurt
-    rootDir: backend
-    schedule: "0 2 * * *"
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m app.jobs.cleanup_audio
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: hustle-db
-          property: connectionString
-      - key: JWT_SECRET
-        generateValue: true
-      - key: PHONE_HASH_PEPPER
-        generateValue: true
-      - key: ELEVENLABS_API_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: ENVIRONMENT
-        value: production

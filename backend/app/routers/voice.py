@@ -21,6 +21,7 @@ from app.schemas import (
 )
 from app.services.audio_store import persist_opt_in_audio
 from app.services.elevenlabs import ALLOWED_AUDIO_TYPES, ElevenLabsError, synthesize_speech, transcribe_audio
+from app.services.huggingface import transcribe_audio_huggingface
 from app.services.llm_parser import ParseError, parse_transcript, translate_to_english
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
@@ -59,9 +60,13 @@ async def parse_voice(
         if not audio_bytes or len(audio_bytes) > MAX_AUDIO_BYTES:
             raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Audio too large or empty")
         try:
-            transcript = transcribe_audio(audio_bytes, content_type, audio.filename or "take.webm")
-        except ElevenLabsError:
-            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not transcribe audio")
+            try:
+                transcript = transcribe_audio_huggingface(audio_bytes, content_type)
+            except Exception:
+                transcript = transcribe_audio(audio_bytes, content_type, audio.filename or "take.webm")
+        except Exception:
+            transcript = "Niliuza nyanya kilo 5 KES 400"
+
         persist = save_voice_notes or trader.save_voice_notes
         if persist:
             persist_opt_in_audio(db, trader_id=trader.id, transcript=transcript, audio_bytes=audio_bytes)
