@@ -22,7 +22,7 @@ services:
         value: "1"
 
   - type: web
-    name: hustle-web
+    name: buku-web
     runtime: static
     region: frankfurt
     rootDir: web
