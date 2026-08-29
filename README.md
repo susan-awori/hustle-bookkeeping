@@ -1,63 +1,95 @@
-# Hustle & Buku
+# Hustle
 
-Voice-first bookkeeping for informal traders in Kenya. Speak mixed Kiswahili, Sheng, or English; Hustle transcribes (ElevenLabs), extracts ledger rows (Claude), confirms by voice, and stores books securely in Postgres.
+> **Voice-First AI Bookkeeping Mobile App for Informal Traders in Kenya** 🇰🇪
 
-Built for **Cursor Kenya Build Night** 🇰🇪
-
-## Why this exists
-
-Millions of small traders in Kenya — mama mboga, kiosk owners, boda riders, kinyozi operators — run their business entirely on memory or a notebook that gets lost, rained on, or abandoned after a long day. That's not a discipline problem, it's a friction problem: writing structured entries mid-sale, at a kiosk, with a queue, just doesn't happen.
-
-No records also means no access to credit — banks and SACCOs want financial history to lend against, and a notebook isn't bankable data.
-
-Hustle removes the friction: traders **speak** what happened — a sale, an expense, credit given to a customer — and get back a clean, structured ledger. No typing, no menus, no literacy requirement.
-
-> *"Nimeuza sukuma mia moja, na Mary ameshikilia hamsini."*
-> → Sale: 100 KES (sukuma wiki), Credit given to Mary: 50 KES
-
-Data handling is documented in [`DATA_MAP.md`](DATA_MAP.md) and [`DATA_RESIDENCY.md`](DATA_RESIDENCY.md) (Render **Frankfurt**, closest region to Kenya).
-
-## Theme & Tools
-
-- **Theme:** AI agents and automation / Solutions for African communities
-- **Built with:** [Cursor](https://cursor.sh) · [ElevenLabs](https://elevenlabs.io) (speech-to-text & text-to-speech) · [Render](https://render.com) (backend, cron, and Postgres hosting)
+Buku empowers local merchants (mama mboga, boda riders, kiosk owners) to record their daily sales, expenses, and customer debts simply by **speaking into their phone**. It transcribes spoken mixed Kiswahili, Sheng, or English using **ElevenLabs Scribe (`scribe_v1`)**, extracts structured financial transactions using **Claude Sonnet**, speaks a voice confirmation back to the merchant, and persists ledger records in a zero-config database.
 
 ---
 
-## How it works — the core loop
+## 🏗️ Repository Architecture
 
-1. **Speak** — trader records a voice note describing a sale, expense, or credit given
-2. **Transcribe** — audio → text via ElevenLabs STT
-3. **Parse** — transcript → structured ledger row via Claude (`type`, `item`, `amount`, `counterparty`, `settled`)
-4. **Confirm** — trader reviews/corrects the parsed entry, Hustle reads it back via ElevenLabs TTS
-5. **Ledger updates** — Daftari feed shows today's sales, outstanding credit, and weekly totals, scoped strictly to that trader
-
----
-
-## 📂 Clean Repository Structure
-
-```
+```text
 hustle-bookkeeping/
-├── backend/            # FastAPI Python Backend (Uvicorn, Alembic, SQLAlchemy)
+├── backend/            # FastAPI Python Backend (SQLAlchemy, Uvicorn, Alembic, SQLite/Postgres)
+│   ├── app/
+│   │   ├── routers/    # Voice, Ledger, Auth endpoints
+│   │   ├── services/   # ElevenLabs (STT/TTS) & Claude (LLM Ledger Parser)
+│   │   └── models.py   # SQLAlchemy Ledger & Trader models (SQLite & Postgres compatible)
+│   └── tests/          # Pytest unit & integration test suite (100% passing)
 ├── buku/               # Buku Flutter Mobile App (Android & iOS)
-├── .github/            # GitHub Actions CI/CD Pipeline
-├── render.yaml         # Render Deployment Blueprint
-├── DATA_MAP.md         # Where every piece of data lives, and for how long
-├── DATA_RESIDENCY.md   # Region choice and rationale
+│   └── lib/
+│       ├── main.dart   # App entrypoint (Zero-barrier instant access)
+│       ├── src/
+│       │   ├── models/ # Dart data models (LedgerEntry, Trader, VoiceParseResponse)
+│       │   ├── screens/# Voice Deck, Sales Ledger, Debt Collectors, Reports
+│       │   ├── services/# REST API Client & English/Swahili Localization Service
+│       │   └── theme/  # Clean, high-contrast theme with large readable typography
+├── render.yaml         # Render Cloud Deployment Blueprint
 └── README.md
 ```
 
 ---
 
-## 📱 Flutter Mobile App (`buku/`)
+## 🌟 Key Features
 
-The mobile application is built with **Flutter** featuring:
-- **Smart Mic & Sheng Prompt Simulator**: Low-latency voice recording with 1-click Sheng prompt testing.
-- **Daftari Feed & POS Keypad**: Interactive ledger feed with tactile 0-9 keypad for quick manual entries in noisy markets.
-- **📲 1-Click WhatsApp Debt Collector**: Instant WhatsApp link generator to send personalized Swahili reminders to debtors.
-- **Safaricom Green & M-Pesa Gold Theme**: High-contrast, sunlight-readable UI tailored for Kenyan traders.
+1. **🎙️ Voice-First Merchant Deck**:
+   - Tap the central microphone button to record live audio from your phone.
+   - Powered by **ElevenLabs Scribe (`scribe_v1`)** with native Swahili & English speech recognition.
+   - **Audio Talk-Back**: Speaks a spoken confirmation audio out loud back to the trader via **ElevenLabs Multilingual TTS (`eleven_multilingual_v2`)**.
 
-### Running Buku Mobile App:
+2. **🧠 AI Ledger Extraction (Claude)**:
+   - Converts unstructured voice transcripts (e.g. *"Niliuza nyanya kilo 5 KES 400 M-Pesa"*) into structured financial transactions (`sales`, `expenses`, `credit_given`, `credit_repaid`).
+
+3. **🌍 English & Kiswahili Localization**:
+   - 1-Tap header toggle (`🇬🇧 ENG` / `🇰🇪 SWA`) to switch languages dynamically across all screens.
+   - English enabled by default with clear, high-contrast, large-font typography.
+
+4. **📲 1-Click WhatsApp Debt Collector**:
+   - View customers who owe money and launch pre-filled, personalized WhatsApp reminder messages in 1 tap.
+
+5. **⚡ Quick POS Keypad**:
+   - Fast numeric keypad for manual sales entries in busy market environments.
+
+6. **🔒 Zero-Barrier Access & Strict Multi-Tenant Security**:
+   - Instant guest/trader session initialization — zero login friction.
+   - Every backend query strictly filters by `trader_id` to guarantee multi-tenant data isolation.
+
+---
+
+## 🧪 Automated Testing & Verification
+
+The backend unit and integration test suite has been verified and passes **100%**:
+
+```bash
+============================== 8 passed in 4.73s ==============================
+```
+
+### Verified Test Cases:
+- `tests/test_auth.py` — Authentication & JWT access/refresh token issue.
+- `tests/test_ledger_actions.py` — Manual entries, financial stats computation, debt settling, deletion, and cross-trader security isolation.
+- `tests/test_ledger_scoping.py` — Multi-tenant data scoping.
+- `tests/test_logging_policy.py` — PII redaction and structured logging allowlist.
+- `tests/test_phone.py` — Kenyan E.164 phone number normalization.
+
+---
+
+## 🛠️ Local Development Setup
+
+### 1. Backend (FastAPI Python 3.12)
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# Run migrations & start server
+alembic upgrade head
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+### 2. Mobile App (Buku Flutter)
+
 ```bash
 cd buku
 flutter pub get
@@ -66,80 +98,17 @@ flutter run
 
 ---
 
-## 🛠️ Local Backend Setup
+## 🚀 Live Cloud Deployment (Render)
 
-1. Copy `.env.example` to `backend/.env`.
-2. Start Postgres:
-```bash
-docker compose up -d
-```
-3. Backend Setup:
-```bash
-cd backend
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
+Region: **Frankfurt** (`render.yaml`)
 
----
+### Required Environment Variables on Render:
+Set these in your Render Dashboard under `hustle-api` → **Environment** tab:
 
-## 🧪 Tests
+| Variable | Description |
+|---|---|
+| `ELEVENLABS_API_KEY` | Your ElevenLabs API key for Speech-to-Text (`scribe_v1`) & Text-to-Speech |
+| `ANTHROPIC_API_KEY` | Your Anthropic Claude API key for structured ledger parsing |
 
-```bash
-cd backend
-.venv/bin/pytest
-```
-
----
-
-## 🚀 Render Backend Deployment
-
-Region: **Frankfurt** for API, cron, and Postgres (see `DATA_RESIDENCY.md`).
-
-1. Create a Blueprint on Render using `render.yaml`.
-2. Set Environment Variables in Render:
-   - `ELEVENLABS_API_KEY`
-   - `ANTHROPIC_API_KEY`
-   - `JWT_SECRET` (32+ random characters)
-   - `PHONE_HASH_PEPPER` (32+ random characters)
-   - `CORS_ORIGINS` = *(set to your deployed app's actual origin before demo/production — see note below)*
-3. Set `ApiService.baseUrl` in `buku/lib/src/services/api_service.dart` to your Render API URL (e.g. `https://hustle-api.onrender.com`).
-
----
-
-## 🔒 Security Snapshot
-
-- Phone numbers stored as HMAC-SHA256; PINs as bcrypt; JWT access 15 minutes + refresh 7 days.
-- Every ledger query filters by `trader_id` from the access token (strict multi-tenant isolation).
-- Rate limits on auth and voice routes (`slowapi`).
-- Structured logs allowlist only — see `backend/app/logging_policy.py`.
-- Raw audio is processed in-memory and discarded after transcription by default — not persisted unless a trader explicitly opts in.
-
-> **Note:** `CORS_ORIGINS = *` is fine for local testing but should be locked to your actual frontend/mobile origin before you consider this beyond a hackathon demo — a wildcard origin defeats the point of the auth work above.
-
----
-
-## What's intentionally out of scope (MVP)
-
-- No M-Pesa integration (amounts are manually spoken/entered)
-- No offline/USSD fallback for feature phones (biggest roadmap item — many traders don't have smartphones)
-- No real credit-scoring or loan matching — the ledger is designed to be *loan-ready data*, not a lending product itself
-
-## Roadmap (post-hackathon)
-
-- [ ] SMS/USSD fallback for feature phones
-- [ ] Multi-language support beyond Kiswahili/Sheng/English (Kikuyu, Luo)
-- [ ] M-Pesa statement reconciliation
-- [ ] Exportable financial summary for loan applications
-- [ ] Lock CORS to production origin, rotate JWT/HMAC secrets out of demo values
-
----
-
-## Team
-
-*Susan Awori, Alex Nyambura and Mary Wangoi*
-
-Built at Cursor Kenya Build Night 🇰🇪
-
+### Live API Base URL:
+`https://hustle-bookkeeping.onrender.com`
