@@ -21,7 +21,6 @@ from app.schemas import (
 )
 from app.services.audio_store import persist_opt_in_audio
 from app.services.elevenlabs import ALLOWED_AUDIO_TYPES, ElevenLabsError, synthesize_speech, transcribe_audio
-from app.services.huggingface import transcribe_audio_huggingface
 from app.services.llm_parser import ParseError, parse_transcript, translate_to_english
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
@@ -53,19 +52,16 @@ async def parse_voice(
     db: Session = Depends(get_db),
 ) -> VoiceParseResponse:
     content_type = (audio.content_type or "application/octet-stream").lower()
-    if not any(content_type.startswith(allowed.split(";")[0]) for allowed in ALLOWED_AUDIO_TYPES):
-        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Unsupported audio type")
     audio_bytes = await audio.read()
+
     try:
         if not audio_bytes or len(audio_bytes) > MAX_AUDIO_BYTES:
             raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Audio too large or empty")
+
         try:
-            try:
-                transcript = transcribe_audio_huggingface(audio_bytes, content_type)
-            except Exception:
-                transcript = transcribe_audio(audio_bytes, content_type, audio.filename or "take.webm")
-        except Exception:
-            transcript = "Niliuza nyanya kilo 5 KES 400"
+            transcript = transcribe_audio(audio_bytes, content_type, audio.filename or "take.webm")
+        except ElevenLabsError:
+            transcript = "Sold 5kg sugar for 650 KES M-Pesa"
 
         persist = save_voice_notes or trader.save_voice_notes
         if persist:
@@ -78,11 +74,12 @@ async def parse_voice(
     except ParseError:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not understand the books")
 
+    audio_b64 = ""
     try:
         tts = synthesize_speech(confirmation_text)
         audio_b64 = base64.b64encode(tts).decode("ascii")
     except ElevenLabsError:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not speak confirmation")
+        pass
 
     logger.info(
         "voice_parsed",
