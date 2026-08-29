@@ -1,19 +1,52 @@
-# Hustle
+# Hustle & Buku
 
-Voice-first bookkeeping for informal traders in Kenya. Speak mixed Kiswahili/English; Hustle transcribes (ElevenLabs), extracts ledger rows (Claude), confirms by voice, and stores books in Postgres.
+Voice-first bookkeeping for informal traders in Kenya. Speak mixed Kiswahili, Sheng, or English; Hustle transcribes (ElevenLabs), extracts ledger rows (Claude), confirms by voice, and stores books securely in Postgres.
 
-Data handling is documented first in [`DATA_MAP.md`](DATA_MAP.md) and [`DATA_RESIDENCY.md`](DATA_RESIDENCY.md) (Render **Frankfurt**, closest region to Kenya).
+Data handling is documented in [`DATA_MAP.md`](DATA_MAP.md) and [`DATA_RESIDENCY.md`](DATA_RESIDENCY.md) (Render **Frankfurt**, closest region to Kenya).
 
-## Local setup
+---
 
-1. Copy `.env.example` to `backend/.env`. The example includes dev-ready `JWT_SECRET` and `PHONE_HASH_PEPPER` values so auth works locally without voice API keys.
+## 📂 Clean Repository Structure
+
+```
+hustle-bookkeeping/
+├── backend/            # FastAPI Python Backend (Uvicorn, Alembic, SQLAlchemy)
+├── buku/               # Buku Flutter Mobile App (Android & iOS)
+├── .github/            # GitHub Actions CI/CD Pipeline
+├── render.yaml         # Render Deployment Blueprint
+└── README.md
+```
+
+---
+
+## 📱 Flutter Mobile App (`buku/`)
+
+The mobile application is built with **Flutter** featuring:
+- **Smart Mic & Sheng Prompt Simulator**: Low-latency voice recording with 1-click Sheng prompt testing.
+- **Daftari Feed & POS Keypad**: Interactive ledger feed with tactile 0-9 keypad for quick manual entries in noisy markets.
+- **📲 1-Click WhatsApp Debt Collector**: Instant WhatsApp link generator to send personalized Swahili reminders to debtors.
+- **Safaricom Green & M-Pesa Gold Theme**: High-contrast, sunlight-readable UI tailored for Kenyan traders.
+
+### Running Buku Mobile App:
+
+```bash
+cd buku
+flutter pub get
+flutter run
+```
+
+---
+
+## 🛠️ Local Backend Setup
+
+1. Copy `.env.example` to `backend/.env`.
 2. Start Postgres:
 
 ```bash
 docker compose up -d
 ```
 
-3. Backend:
+3. Backend Setup:
 
 ```bash
 cd backend
@@ -24,42 +57,35 @@ alembic upgrade head
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-4. Frontend:
+---
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open http://localhost:5173. The Vite proxy forwards `/api` to the API.
-
-## Tests
+## 🧪 Tests
 
 ```bash
 cd backend
-pytest
+.venv/bin/pytest
 ```
 
-## Render production
+---
+
+## 🚀 Render Backend Deployment
 
 Region: **Frankfurt** for API, cron, and Postgres (see `DATA_RESIDENCY.md`).
 
-1. Create a Blueprint from `render.yaml`, or create the same services by hand.
-2. In Render’s **Environment** panel (not in git), set:
+1. Create a Blueprint on Render using `render.yaml`.
+2. Set Environment Variables in Render:
    - `ELEVENLABS_API_KEY`
    - `ANTHROPIC_API_KEY`
-   - `JWT_SECRET` (long random; **same value** on API and the audio-cleanup cron)
-   - `PHONE_HASH_PEPPER` (long random; **same value** on API and cron)
-   - `CORS_ORIGINS` is wired automatically from the static site when using `render.yaml`
-   - `VITE_API_URL` on the static site is wired automatically from the API service
-3. `DATABASE_URL` is injected from the Frankfurt database. Do not paste it into source control.
+   - `JWT_SECRET` (32+ random characters)
+   - `PHONE_HASH_PEPPER` (32+ random characters)
+   - `CORS_ORIGINS` = `*`
+3. Set `ApiService.baseUrl` in `buku/lib/src/services/api_service.dart` to your Render API URL (e.g. `https://hustle-api.onrender.com`).
 
-Raw audio is **not** stored unless the trader opts in. Expired opt-in files are hard-deleted by `python -m app.jobs.cleanup_audio` (cron at 02:00 UTC plus an in-process job every 6 hours).
+---
 
-## Security snapshot
+## 🔒 Security Snapshot
 
 - Phone numbers stored as HMAC-SHA256; PINs as bcrypt; JWT access 15 minutes + refresh 7 days.
-- Every ledger query filters by `trader_id` from the access token.
+- Every ledger query filters by `trader_id` from the access token (strict multi-tenant isolation).
 - Rate limits on auth and voice routes (`slowapi`).
 - Structured logs allowlist only — see `backend/app/logging_policy.py`.
