@@ -1,4 +1,4 @@
-# Hustle
+# Buku
 
 > **Voice-First AI Bookkeeping Mobile App for Informal Traders in Kenya** 🇰🇪
 

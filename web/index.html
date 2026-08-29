@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hustle Web — Voice-First AI Bookkeeping for Informal Traders in Kenya</title>
+  <meta name="description" content="Speak mixed Kiswahili, Sheng, or English to record sales, expenses, and customer debts instantly with ElevenLabs and Claude AI.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">B</div>
+      <div class="brand-text">
+        <h1 id="shop-name">Mama Boi Groceries</h1>
+        <p id="till-badge">Till: 842109 · Live</p>
+      </div>
+    </div>
+    <button class="lang-toggle" id="lang-btn" onclick="toggleLanguage()">🇬🇧 ENG</button>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Summary Banner -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-label" id="lbl-sales-today">Today Sales</div>
+        <div class="summary-value val-green" id="val-sales">KES 4,500</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label" id="lbl-debts-owed">Debts Owed</div>
+        <div class="summary-value val-gold" id="val-debts">KES 1,200</div>
+      </div>
+    </div>
+
+    <!-- Mic Recording Card -->
+    <div class="mic-card">
+      <button class="mic-button" id="mic-btn" onclick="toggleMicRecording()">🎙️</button>
+      <div class="mic-status" id="mic-status">Tap Microphone to Record Voice</div>
+
+      <div class="prompts-title" id="lbl-prompts-title">QUICK PROMPTS (SHORTCUTS):</div>
+      <div class="prompts-list">
+        <button class="prompt-btn" onclick="runPrompt('Sold 5kg sugar for KES 650 M-Pesa')">🗣️ "Sold 5kg sugar for KES 650 M-Pesa"</button>
+        <button class="prompt-btn" onclick="runPrompt('Paid 200 KES for boda transport')">🗣️ "Paid 200 KES for boda transport"</button>
+        <button class="prompt-btn" onclick="runPrompt('Mama Mwangi owes 1200 KES for maize flour')">🗣️ "Mama Mwangi owes 1200 KES for maize flour"</button>
+        <button class="prompt-btn" onclick="runPrompt('Juma paid back 500 KES debt')">🗣️ "Juma paid back 500 KES debt"</button>
+      </div>
+    </div>
+
+    <!-- Output Box (Initially Hidden) -->
+    <div class="output-box" id="output-card" style="display: none;">
+      <div class="output-title" id="lbl-output-title">ELEVENLABS / CLAUDE REAL OUTPUT:</div>
+      <div class="output-text" id="output-transcript">"..."</div>
+      <div class="parsed-item" id="parsed-item-container">
+        <div>
+          <h3 id="parsed-item-desc">Sugar 5kg</h3>
+          <p id="parsed-item-sub">Type: SALE</p>
+        </div>
+        <div class="parsed-amount" id="parsed-item-amt">KES 650</div>
+      </div>
+      <button class="save-btn" id="btn-save-ledger" onclick="saveToLedger()">Save to Database 📗</button>
+    </div>
+
+    <!-- Ledger Section -->
+    <div class="section-header">
+      <h2 id="lbl-ledger-title">Sales History</h2>
+      <button class="add-pos-btn" onclick="openPosModal()" id="btn-add-pos">+ Add Sale</button>
+    </div>
+
+    <div class="ledger-list" id="ledger-list">
+      <!-- Dynamic Rows -->
+    </div>
+  </main>
+
+  <!-- POS Quick Keypad Modal -->
+  <div class="modal-overlay" id="pos-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 id="lbl-pos-title">Quick Sale Entry</h2>
+        <button onclick="closePosModal()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">✕</button>
+      </div>
+      <input type="text" id="pos-desc" placeholder="Item name (e.g. Sugar 1kg)" style="padding:14px; border-radius:10px; background:var(--input-dark); border:1px solid var(--border-color); color:white; font-size:16px;">
+      <div style="font-size:28px; font-weight:800; color:var(--primary-green); text-align:right; padding:12px; background:var(--bg-dark); border-radius:10px;" id="pos-amount">KES 0</div>
+      <div class="keypad-grid">
+        <button class="keypad-btn" onclick="keypadPress('1')">1</button>
+        <button class="keypad-btn" onclick="keypadPress('2')">2</button>
+        <button class="keypad-btn" onclick="keypadPress('3')">3</button>
+        <button class="keypad-btn" onclick="keypadPress('4')">4</button>
+        <button class="keypad-btn" onclick="keypadPress('5')">5</button>
+        <button class="keypad-btn" onclick="keypadPress('6')">6</button>
+        <button class="keypad-btn" onclick="keypadPress('7')">7</button>
+        <button class="keypad-btn" onclick="keypadPress('8')">8</button>
+        <button class="keypad-btn" onclick="keypadPress('9')">9</button>
+        <button class="keypad-btn" onclick="keypadPress('C')">C</button>
+        <button class="keypad-btn" onclick="keypadPress('0')">0</button>
+        <button class="keypad-btn" onclick="keypadPress('⌫')">⌫</button>
+      </div>
+      <button class="save-btn" onclick="submitPosSale()" id="btn-submit-pos">Save Sale 💸</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

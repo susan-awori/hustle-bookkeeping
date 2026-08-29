@@ -1,0 +1,357 @@
+/* Hustle Web Design System - Clean, Modern, Large Typography */
+
+:root {
+  --primary-green: #00a859;
+  --primary-green-dark: #008746;
+  --accent-gold: #f5a623;
+  --whatsapp-green: #25d366;
+  --danger-red: #ef4444;
+
+  --bg-dark: #0f172a;
+  --card-dark: #1e293b;
+  --input-dark: #334155;
+  --border-color: rgba(0, 168, 89, 0.25);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Navbar */
+header {
+  background-color: var(--card-dark);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary-green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+}
+
+.brand-text h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.brand-text p {
+  font-size: 12px;
+  color: var(--primary-green);
+}
+
+.lang-toggle {
+  background-color: var(--input-dark);
+  border: 1px solid var(--border-color);
+  color: var(--primary-green);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-toggle:hover {
+  background-color: var(--primary-green);
+  color: white;
+}
+
+/* Container */
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Summary Banner Cards */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.summary-card {
+  background-color: var(--card-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 20px;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.summary-value {
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.val-green { color: var(--primary-green); }
+.val-gold { color: var(--accent-gold); }
+
+/* Mic Deck Card */
+.mic-card {
+  background-color: var(--card-dark);
+  border: 1.5px solid var(--border-color);
+  border-radius: 20px;
+  padding: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.mic-button {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+  border: none;
+  color: white;
+  font-size: 56px;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(0, 168, 89, 0.4);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mic-button:hover {
+  transform: scale(1.06);
+}
+
+.mic-button.recording {
+  background: var(--danger-red);
+  box-shadow: 0 0 32px rgba(239, 68, 68, 0.6);
+  animation: pulse 1.2s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.12); }
+}
+
+.mic-status {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Prompt Chips */
+.prompts-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  align-self: flex-start;
+}
+
+.prompts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.prompt-btn {
+  background-color: var(--card-dark);
+  border: 1px solid var(--border-color);
+  color: white;
+  padding: 14px 18px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prompt-btn:hover {
+  border-color: var(--primary-green);
+  background-color: var(--input-dark);
+}
+
+/* AI Output Box */
+.output-box {
+  background-color: var(--card-dark);
+  border: 1px solid var(--primary-green);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.output-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary-green);
+  letter-spacing: 1px;
+}
+
+.output-text {
+  font-size: 18px;
+  font-style: italic;
+}
+
+.parsed-item {
+  background-color: var(--bg-dark);
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.parsed-item h3 { font-size: 18px; }
+.parsed-item p { font-size: 14px; color: var(--text-muted); }
+.parsed-amount { font-size: 22px; font-weight: 800; color: var(--primary-green); }
+
+.save-btn {
+  background-color: var(--primary-green);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Ledger List */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-header h2 { font-size: 20px; }
+
+.add-pos-btn {
+  background-color: var(--primary-green);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ledger-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ledger-item {
+  background-color: var(--card-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ledger-title { font-size: 18px; font-weight: 700; }
+.ledger-sub { font-size: 14px; color: var(--text-muted); }
+.ledger-amount { font-size: 20px; font-weight: 800; color: var(--primary-green); }
+
+.wa-btn {
+  background-color: var(--whatsapp-green);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 99;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal-card {
+  background-color: var(--card-dark);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.keypad-btn {
+  background-color: var(--bg-dark);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.keypad-btn:hover { background-color: var(--input-dark); }
