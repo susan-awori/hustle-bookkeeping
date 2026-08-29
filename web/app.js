@@ -1,4 +1,4 @@
-// Hustle Web App Logic
+// Hustle Web App Logic - 100% Real Live Backend Data
 const API_BASE = 'https://hustle-bookkeeping.onrender.com';
 
 let isEnglish = true;
@@ -8,11 +8,8 @@ let audioChunks = [];
 let pendingEntry = null;
 let posAmountStr = '';
 
-let ledgerItems = [
-  { id: '1', item_description: 'Sugar 5kg', amount_kes: 650, entry_type: 'sale', counterparty_name: null, is_settled: true },
-  { id: '2', item_description: 'Boda Transport', amount_kes: 200, entry_type: 'expense', counterparty_name: null, is_settled: true },
-  { id: '3', item_description: 'Maize flour', amount_kes: 1200, entry_type: 'credit_given', counterparty_name: 'Mama Mwangi', is_settled: false }
-];
+// Start with empty ledger items array (NO dummy data)
+let ledgerItems = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,17 +23,18 @@ const i18n = {
     salesToday: "Today Sales",
     debtsOwed: "Debts Owed",
     micTap: "Tap Microphone to Record Voice",
-    micListening: "🎙️ Recording audio...",
+    micListening: "🎙️ Recording live microphone...",
     promptsTitle: "QUICK PROMPTS (SHORTCUTS):",
     outputTitle: "ELEVENLABS / CLAUDE OUTPUT:",
-    saveBtn: "Save to Database 📗",
+    saveBtn: "Save to Real Database 📗",
     ledgerTitle: "Sales History",
     addPos: "+ Add Sale",
     posTitle: "Quick Sale Entry",
     posPlaceholder: "Item name (e.g. Sugar 1kg)",
     posSubmit: "Save Sale 💸",
     customer: "Customer",
-    debtorWa: "Send WhatsApp Reminder"
+    debtorWa: "Send WhatsApp Reminder",
+    emptyState: "No transactions recorded yet. Tap the microphone or Add Sale button."
   },
   sw: {
     salesToday: "Mauzo Leo",
@@ -52,7 +50,8 @@ const i18n = {
     posPlaceholder: "Jina la bidhaa (e.g. Sukari 1kg)",
     posSubmit: "Hifadhi Mauzo 💸",
     customer: "Mteja",
-    debtorWa: "Tuma Ukumbusho wa WhatsApp"
+    debtorWa: "Tuma Ukumbusho wa WhatsApp",
+    emptyState: "Bado hakuna hesabu. Bofya maikrofoni kuanza kurekodi."
   }
 };
 
@@ -97,15 +96,25 @@ function renderLedger() {
   const listEl = document.getElementById('ledger-list');
   listEl.innerHTML = '';
 
+  const t = isEnglish ? i18n.en : i18n.sw;
+
+  if (ledgerItems.length === 0) {
+    listEl.innerHTML = `
+      <div style="text-align:center; padding:32px 16px; color:var(--text-muted); font-size:16px;">
+        ${t.emptyState}
+      </div>
+    `;
+    return;
+  }
+
   ledgerItems.forEach(item => {
     const isSale = item.entry_type === 'sale';
     const isDebt = item.entry_type === 'credit_given';
     const div = document.createElement('div');
     div.className = 'ledger-item';
 
-    const t = isEnglish ? i18n.en : i18n.sw;
-    const subText = item.counterpartyName || item.counterparty_name
-      ? `${t.customer}: ${item.counterpartyName || item.counterparty_name}`
+    const subText = item.counterparty_name || item.counterpartyName
+      ? `${t.customer}: ${item.counterparty_name || item.counterpartyName}`
       : 'M-Pesa · Cash';
 
     let actionBtn = '';
@@ -134,22 +143,22 @@ function renderLedger() {
   });
 }
 
-// Fetch live ledger from backend
+// Fetch 100% live ledger entries from real backend database
 async function fetchLedger() {
   try {
     const res = await fetch(`${API_BASE}/api/v1/ledger`);
     if (res.ok) {
       const data = await res.json();
-      if (data.items && data.items.length > 0) {
-        ledgerItems = data.items;
-        renderLedger();
-        renderStats();
-      }
+      ledgerItems = data.items || [];
+      renderLedger();
+      renderStats();
     }
-  } catch (_) {}
+  } catch (err) {
+    console.error('Fetch ledger error:', err);
+  }
 }
 
-// Mic Recording
+// Mic Recording via Web Audio API
 async function toggleMicRecording() {
   const micBtn = document.getElementById('mic-btn');
   const micStatus = document.getElementById('mic-status');
@@ -164,7 +173,7 @@ async function toggleMicRecording() {
     }
   } else {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      runPrompt('Sold 5kg sugar for KES 650 M-Pesa');
+      alert(isEnglish ? "Microphone access is not supported on this browser." : "Maikrofoni haitumiki kwenye browser hii.");
       return;
     }
     try {
@@ -181,17 +190,18 @@ async function toggleMicRecording() {
       micBtn.classList.add('recording');
       micStatus.innerText = t.micListening;
     } catch (err) {
-      runPrompt('Sold 5kg sugar for KES 650 M-Pesa');
+      alert(isEnglish ? "Please allow microphone permissions." : "Tafadhali ruhusu maikrofoni.");
     }
   }
 }
 
+// Upload live audio recording to FastAPI -> ElevenLabs -> Claude
 async function uploadAudioToBackend(blob) {
   const formData = new FormData();
   formData.append('audio', blob, 'recording.webm');
 
   document.getElementById('output-card').style.display = 'flex';
-  document.getElementById('output-transcript').innerText = 'Processing ElevenLabs speech-to-text...';
+  document.getElementById('output-transcript').innerText = isEnglish ? 'Processing voice audio with ElevenLabs & Claude...' : 'Inachambua sauti na ElevenLabs...';
 
   try {
     const res = await fetch(`${API_BASE}/api/v1/voice/parse`, {
@@ -203,33 +213,9 @@ async function uploadAudioToBackend(blob) {
       displayParsedResult(data.transcript, data.entries);
       return;
     }
-  } catch (_) {}
-
-  runPrompt('Sold 5kg sugar for KES 650 M-Pesa');
-}
-
-function runPrompt(promptText) {
-  document.getElementById('output-card').style.display = 'flex';
-  document.getElementById('output-transcript').innerText = `"${promptText}"`;
-
-  let type = 'sale';
-  let amt = 650;
-  let item = isEnglish ? 'Sugar 5kg' : 'Sukari 5kg';
-  let name = null;
-
-  if (promptText.includes('boda') || promptText.includes('transport')) {
-    type = 'expense'; amt = 200; item = isEnglish ? 'Boda Transport' : 'Nauli ya Boda';
-  } else if (promptText.includes('owes') || promptText.includes('ananidai')) {
-    type = 'credit_given'; amt = 1200; item = isEnglish ? 'Maize flour' : 'Unga wa ngano'; name = 'Mama Mwangi';
-  } else if (promptText.includes('paid') || promptText.includes('amelipa')) {
-    type = 'credit_repaid'; amt = 500; item = isEnglish ? 'Debt repayment' : 'Malipo ya deni'; name = 'Juma';
+  } catch (err) {
+    console.error('API Voice parse error:', err);
   }
-
-  pendingEntry = { entry_type: type, item_description: item, amount_kes: amt, counterparty_name: name, is_settled: type !== 'credit_given' };
-
-  document.getElementById('parsed-item-desc').innerText = item;
-  document.getElementById('parsed-item-sub').innerText = name ? `Customer: ${name}` : `Type: ${type.toUpperCase()}`;
-  document.getElementById('parsed-item-amt').innerText = `KES ${amt}`;
 }
 
 function displayParsedResult(transcript, entries) {
@@ -243,29 +229,28 @@ function displayParsedResult(transcript, entries) {
   }
 }
 
+// Save parsed entry to real backend database
 async function saveToLedger() {
   if (!pendingEntry) return;
 
   try {
-    await fetch(`${API_BASE}/api/v1/ledger`, {
+    const res = await fetch(`${API_BASE}/api/v1/ledger`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pendingEntry)
     });
-  } catch (_) {}
 
-  ledgerItems.unshift({
-    id: String(Date.now()),
-    ...pendingEntry
-  });
-
-  document.getElementById('output-card').style.display = 'none';
-  pendingEntry = null;
-  renderLedger();
-  renderStats();
+    if (res.ok) {
+      document.getElementById('output-card').style.display = 'none';
+      pendingEntry = null;
+      await fetchLedger(); // Re-fetch live items from real DB
+    }
+  } catch (err) {
+    console.error('Save entry error:', err);
+  }
 }
 
-// Modal POS
+// Modal POS Quick Entry
 function openPosModal() {
   document.getElementById('pos-modal').classList.add('active');
   posAmountStr = '';
@@ -298,15 +283,17 @@ async function submitPosSale() {
   };
 
   try {
-    await fetch(`${API_BASE}/api/v1/ledger`, {
+    const res = await fetch(`${API_BASE}/api/v1/ledger`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newEntry)
     });
-  } catch (_) {}
 
-  ledgerItems.unshift({ id: String(Date.now()), ...newEntry });
-  closePosModal();
-  renderLedger();
-  renderStats();
+    if (res.ok) {
+      closePosModal();
+      await fetchLedger(); // Re-fetch live items from real DB
+    }
+  } catch (err) {
+    console.error('Submit POS sale error:', err);
+  }
 }
