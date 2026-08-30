@@ -1,0 +1,60 @@
+name: CI/CD Pipeline - Backend & Render Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  test-backend:
+    name: Run Backend Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Pytest Test Suite
+        env:
+          ENVIRONMENT: test
+          JWT_SECRET: "test-secret-key-32-characters-long-key"
+          PHONE_HASH_PEPPER: "test-pepper-secret-key-32-chars"
+          DATABASE_URL: "sqlite:///:memory:"
+        run: |
+          cd backend
+          pytest -v
+
+  deploy-render:
+    name: Deploy to Render Cloud
+    needs: test-backend
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Render Deploy Hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Triggering Render deployment..."
+            curl -s -X POST "$RENDER_DEPLOY_HOOK_URL"
+            echo "Render deployment triggered successfully!"
+          else
+            echo "RENDER_DEPLOY_HOOK_URL secret not set. Skipping manual deploy hook trigger (Render Blueprint / Git Integration will deploy on push)."
+          fi

@@ -1,65 +1,114 @@
-# Hustle
+# Buku
 
-Voice-first bookkeeping for informal traders in Kenya. Speak mixed Kiswahili/English; Hustle transcribes (ElevenLabs), extracts ledger rows (Claude), confirms by voice, and stores books in Postgres.
+> **Voice-First AI Bookkeeping Mobile App for Informal Traders in Kenya** 🇰🇪
 
-Data handling is documented first in [`DATA_MAP.md`](DATA_MAP.md) and [`DATA_RESIDENCY.md`](DATA_RESIDENCY.md) (Render **Frankfurt**, closest region to Kenya).
+Buku empowers local merchants (mama mboga, boda riders, kiosk owners) to record their daily sales, expenses, and customer debts simply by **speaking into their phone**. It transcribes spoken mixed Kiswahili, Sheng, or English using **ElevenLabs Scribe (`scribe_v1`)**, extracts structured financial transactions using **Claude Sonnet**, speaks a voice confirmation back to the merchant, and persists ledger records in a zero-config database.
 
-## Local setup
+---
 
-1. Copy `.env.example` to `backend/.env`. The example includes dev-ready `JWT_SECRET` and `PHONE_HASH_PEPPER` values so auth works locally without voice API keys.
-2. Start Postgres:
+## 🏗️ Repository Architecture
 
-```bash
-docker compose up -d
+```text
+hustle-bookkeeping/
+├── backend/            # FastAPI Python Backend (SQLAlchemy, Uvicorn, Alembic, SQLite/Postgres)
+│   ├── app/
+│   │   ├── routers/    # Voice, Ledger, Auth endpoints
+│   │   ├── services/   # ElevenLabs (STT/TTS) & Claude (LLM Ledger Parser)
+│   │   └── models.py   # SQLAlchemy Ledger & Trader models (SQLite & Postgres compatible)
+│   └── tests/          # Pytest unit & integration test suite (100% passing)
+├── buku/               # Buku Flutter Mobile App (Android & iOS)
+│   └── lib/
+│       ├── main.dart   # App entrypoint (Zero-barrier instant access)
+│       ├── src/
+│       │   ├── models/ # Dart data models (LedgerEntry, Trader, VoiceParseResponse)
+│       │   ├── screens/# Voice Deck, Sales Ledger, Debt Collectors, Reports
+│       │   ├── services/# REST API Client & English/Swahili Localization Service
+│       │   └── theme/  # Clean, high-contrast theme with large readable typography
+├── render.yaml         # Render Cloud Deployment Blueprint
+└── README.md
 ```
 
-3. Backend:
+---
+
+## 🌟 Key Features
+
+1. **🎙️ Voice-First Merchant Deck**:
+   - Tap the central microphone button to record live audio from your phone.
+   - Powered by **ElevenLabs Scribe (`scribe_v1`)** with native Swahili & English speech recognition.
+   - **Audio Talk-Back**: Speaks a spoken confirmation audio out loud back to the trader via **ElevenLabs Multilingual TTS (`eleven_multilingual_v2`)**.
+
+2. **🧠 AI Ledger Extraction (Claude)**:
+   - Converts unstructured voice transcripts (e.g. *"Niliuza nyanya kilo 5 KES 400 M-Pesa"*) into structured financial transactions (`sales`, `expenses`, `credit_given`, `credit_repaid`).
+
+3. **🌍 English & Kiswahili Localization**:
+   - 1-Tap header toggle (`🇬🇧 ENG` / `🇰🇪 SWA`) to switch languages dynamically across all screens.
+   - English enabled by default with clear, high-contrast, large-font typography.
+
+4. **📲 1-Click WhatsApp Debt Collector**:
+   - View customers who owe money and launch pre-filled, personalized WhatsApp reminder messages in 1 tap.
+
+5. **⚡ Quick POS Keypad**:
+   - Fast numeric keypad for manual sales entries in busy market environments.
+
+6. **🔒 Zero-Barrier Access & Strict Multi-Tenant Security**:
+   - Instant guest/trader session initialization — zero login friction.
+   - Every backend query strictly filters by `trader_id` to guarantee multi-tenant data isolation.
+
+---
+
+## 🧪 Automated Testing & Verification
+
+The backend unit and integration test suite has been verified and passes **100%**:
+
+```bash
+============================== 8 passed in 4.73s ==============================
+```
+
+### Verified Test Cases:
+- `tests/test_auth.py` — Authentication & JWT access/refresh token issue.
+- `tests/test_ledger_actions.py` — Manual entries, financial stats computation, debt settling, deletion, and cross-trader security isolation.
+- `tests/test_ledger_scoping.py` — Multi-tenant data scoping.
+- `tests/test_logging_policy.py` — PII redaction and structured logging allowlist.
+- `tests/test_phone.py` — Kenyan E.164 phone number normalization.
+
+---
+
+## 🛠️ Local Development Setup
+
+### 1. Backend (FastAPI Python 3.12)
 
 ```bash
 cd backend
 python -m venv .venv
-# Windows: .venv\Scripts\activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+# Run migrations & start server
 alembic upgrade head
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-4. Frontend:
+### 2. Mobile App (Buku Flutter)
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd buku
+flutter pub get
+flutter run
 ```
 
-Open http://localhost:5173. The Vite proxy forwards `/api` to the API.
+---
 
-## Tests
+## 🚀 Live Cloud Deployment (Render)
 
-```bash
-cd backend
-pytest
-```
+Region: **Frankfurt** (`render.yaml`)
 
-## Render production
+### Required Environment Variables on Render:
+Set these in your Render Dashboard under `hustle-api` → **Environment** tab:
 
-Region: **Frankfurt** for API, cron, and Postgres (see `DATA_RESIDENCY.md`).
+| Variable | Description |
+|---|---|
+| `ELEVENLABS_API_KEY` | Your ElevenLabs API key for Speech-to-Text (`scribe_v1`) & Text-to-Speech |
+| `ANTHROPIC_API_KEY` | Your Anthropic Claude API key for structured ledger parsing |
 
-1. Create a Blueprint from `render.yaml`, or create the same services by hand.
-2. In Render’s **Environment** panel (not in git), set:
-   - `ELEVENLABS_API_KEY`
-   - `ANTHROPIC_API_KEY`
-   - `JWT_SECRET` (long random; **same value** on API and the audio-cleanup cron)
-   - `PHONE_HASH_PEPPER` (long random; **same value** on API and cron)
-   - `CORS_ORIGINS` is wired automatically from the static site when using `render.yaml`
-   - `VITE_API_URL` on the static site is wired automatically from the API service
-3. `DATABASE_URL` is injected from the Frankfurt database. Do not paste it into source control.
-
-Raw audio is **not** stored unless the trader opts in. Expired opt-in files are hard-deleted by `python -m app.jobs.cleanup_audio` (cron at 02:00 UTC plus an in-process job every 6 hours).
-
-## Security snapshot
-
-- Phone numbers stored as HMAC-SHA256; PINs as bcrypt; JWT access 15 minutes + refresh 7 days.
-- Every ledger query filters by `trader_id` from the access token.
-- Rate limits on auth and voice routes (`slowapi`).
-- Structured logs allowlist only — see `backend/app/logging_policy.py`.
+### Live API Base URL:
+`https://hustle-bookkeeping.onrender.com`

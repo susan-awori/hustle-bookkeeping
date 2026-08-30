@@ -11,9 +11,16 @@ ALLOWED_AUDIO_TYPES = {
     "audio/webm;codecs=opus",
     "audio/mpeg",
     "audio/mp4",
+    "audio/m4a",
+    "audio/x-m4a",
+    "audio/aac",
     "audio/wav",
     "audio/ogg",
     "audio/x-wav",
+    "audio/3gp",
+    "audio/3gpp",
+    "audio/amr",
+    "application/octet-stream",
 }
 
 

@@ -142,3 +142,30 @@ class LedgerListResponse(StrictModel):
 
 class PreferenceRequest(StrictModel):
     save_voice_notes: bool
+
+
+class CreateLedgerEntryRequest(StrictModel):
+    entry_type: EntryType
+    item_description: str = Field(min_length=1, max_length=255)
+    amount_kes: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+    counterparty_name: str | None = Field(default=None, max_length=120)
+    payment_method: PaymentMethod | None = None
+    is_settled: bool = True
+
+
+class UpdateLedgerEntryRequest(StrictModel):
+    entry_type: EntryType | None = None
+    item_description: str | None = Field(default=None, min_length=1, max_length=255)
+    amount_kes: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=2)
+    counterparty_name: str | None = Field(default=None, max_length=120)
+    is_settled: bool | None = None
+
+
+class LedgerStatsResponse(StrictModel):
+    total_sales: Decimal
+    total_expenses: Decimal
+    total_credit_given: Decimal
+    total_credit_repaid: Decimal
+    outstanding_debt: Decimal
+    net_cash_flow: Decimal
+    total_entries: int
