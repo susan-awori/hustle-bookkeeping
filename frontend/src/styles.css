@@ -70,6 +70,22 @@ input {
   background: #fff;
 }
 
+textarea {
+  font: inherit;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  resize: vertical;
+  min-height: 4rem;
+}
+
+.type-entry {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
 .tabs {
   display: flex;
   gap: 0.5rem;
@@ -203,4 +219,73 @@ td {
   align-items: center;
   font-weight: 500;
   gap: 0.5rem;
+}
+
+.conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-bubble {
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+}
+
+.you-bubble {
+  background: #fff;
+}
+
+.hustle-bubble {
+  background: #eef8f0;
+  border-color: #b8dcc4;
+}
+
+.bubble-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.bubble-text {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.live-draft {
+  margin: 0;
+  font-style: italic;
+  color: var(--ink);
+  max-width: 100%;
+}
+
+.conversation-actions {
+  margin-top: 0.25rem;
+}
+
+.credit-panel {
+  border-color: #d4c4a8;
+}
+
+.credit-total {
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+  color: var(--green-hot);
+}
+
+.repay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.repay-actions .ghost {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
 }

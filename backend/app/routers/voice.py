@@ -48,9 +48,11 @@ async def parse_voice(
     request: Request,
     audio: UploadFile = File(...),
     save_voice_notes: bool = Form(False),
+    browser_transcript: str | None = Form(None),
     trader: Trader = Depends(get_current_trader),
     db: Session = Depends(get_db),
 ) -> VoiceParseResponse:
+    settings = get_settings()
     content_type = (audio.content_type or "application/octet-stream").lower()
     if not any(content_type.startswith(allowed.split(";")[0]) for allowed in ALLOWED_AUDIO_TYPES):
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Unsupported audio type")
@@ -58,10 +60,22 @@ async def parse_voice(
     try:
         if not audio_bytes or len(audio_bytes) > MAX_AUDIO_BYTES:
             raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Audio too large or empty")
-        try:
-            transcript = transcribe_audio(audio_bytes, content_type, audio.filename or "take.webm")
-        except ElevenLabsError:
-            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not transcribe audio")
+        transcript: str | None = None
+        if settings.elevenlabs_api_key.strip():
+            try:
+                transcript = transcribe_audio(audio_bytes, content_type, audio.filename or "take.webm")
+            except ElevenLabsError as exc:
+                raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+        elif settings.environment == "development" and browser_transcript and browser_transcript.strip():
+            transcript = browser_transcript.strip()
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "Voice transcription is not configured. Add ELEVENLABS_API_KEY to backend/.env, "
+                    "or use Chrome/Edge so the browser can capture your speech as text."
+                ),
+            )
         persist = save_voice_notes or trader.save_voice_notes
         if persist:
             persist_opt_in_audio(db, trader_id=trader.id, transcript=transcript, audio_bytes=audio_bytes)
@@ -70,14 +84,16 @@ async def parse_voice(
 
     try:
         entries, confirmation_text, needs = parse_transcript(transcript)
-    except ParseError:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not understand the books")
+    except ParseError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
-    try:
-        tts = synthesize_speech(confirmation_text)
-        audio_b64 = base64.b64encode(tts).decode("ascii")
-    except ElevenLabsError:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not speak confirmation")
+    audio_b64 = ""
+    if settings.elevenlabs_api_key.strip():
+        try:
+            tts = synthesize_speech(confirmation_text)
+            audio_b64 = base64.b64encode(tts).decode("ascii")
+        except ElevenLabsError as exc:
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
     logger.info(
         "voice_parsed",

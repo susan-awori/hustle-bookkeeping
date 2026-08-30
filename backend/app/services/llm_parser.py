@@ -74,6 +74,10 @@ def translate_to_english(text: str) -> str:
 def parse_transcript(transcript: str) -> tuple[list[ParsedEntry], str, bool]:
     settings = get_settings()
     if not settings.anthropic_api_key.strip():
+        if settings.environment == "development":
+            from app.services.dev_parser import dev_parse_transcript
+
+            return dev_parse_transcript(transcript)
         raise ParseError("Anthropic API key is not configured")
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     message = client.messages.create(
