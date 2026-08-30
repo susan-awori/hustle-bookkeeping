@@ -30,6 +30,7 @@ storage/
 *.webm
 *.ogg
 *.m4a
+buku/
 
 # Node / frontend
 frontend/node_modules/

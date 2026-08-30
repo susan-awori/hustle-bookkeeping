@@ -33,7 +33,7 @@ class Trader(Base):
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     pin_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     save_voice_notes: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp(), nullable=False)
 
     ledger_entries: Mapped[list["LedgerEntry"]] = relationship(back_populates="trader")
     audio_logs: Mapped[list["AudioLog"]] = relationship(back_populates="trader")
@@ -52,7 +52,7 @@ class LedgerEntry(Base):
     counterparty_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     is_settled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     raw_transcript: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp(), nullable=False)
 
     trader: Mapped[Trader] = relationship(back_populates="ledger_entries")
 
@@ -66,7 +66,7 @@ class AudioLog(Base):
     )
     s3_or_storage_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     transcript: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp(), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
 
     trader: Mapped[Trader] = relationship(back_populates="audio_logs")
