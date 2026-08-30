@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 import anthropic
 
 from app.config import get_settings
-from app.models import EntryType
+from app.models import EntryType, PaymentMethod
 from app.schemas import ParsedEntry
 
 SYSTEM_PROMPT = """You are Hustle, a bookkeeping parser for informal Kenyan traders.
@@ -16,11 +16,13 @@ Rules:
 - Currency is always Kenyan Shillings. "bob", "kee", "bob", "mia", "elfu" are KES.
 - sale: money in from selling goods/services (niliuza, nimeuza, customer alilipa kwa bidhaa).
 - expense: money out for stock or costs (nimenunua, nilinunua, nauli, rent, fuel).
-- credit_given: goods/service given now, money later (deni, nilipea credit, amechukua deni).
+- credit_given: goods sold on credit / deni — customer takes now, pays later (amechukua deni, nilipea kwa deni).
 - credit_repaid: customer paying an old deni (amelipa deni, amerejesha).
+- payment_method: cash for cash-in-hand sales, mpesa when they say M-Pesa/mobile money, credit only for credit_given.
 - amounts must be numbers only, no commas. Use a string decimal like "150.00".
-- If credit_given, is_settled=false. If credit_repaid or sale/expense, is_settled=true unless they said otherwise.
-- counterparty_name only for credit_given / credit_repaid.
+- If credit_given, is_settled=false and payment_method=credit. Sales paid immediately use entry_type=sale with payment_method cash or mpesa.
+- If credit_repaid, include counterparty_name and payment_method cash or mpesa for how they paid back.
+- counterparty_name required for credit_given / credit_repaid (customer name).
 - Do not invent amounts. If the amount is missing, return entries=[] and needs_clarification=true.
 - Never include phone numbers or PINs in any field.
 - Reply with JSON only, matching the schema.
@@ -37,6 +39,7 @@ Return JSON:
       "item_description": "string",
       "amount_kes": "0.00",
       "counterparty_name": null,
+      "payment_method": "cash|mpesa|credit",
       "is_settled": true
     }}
   ],
@@ -73,11 +76,14 @@ def translate_to_english(text: str) -> str:
 
 def parse_transcript(transcript: str) -> tuple[list[ParsedEntry], str, bool]:
     settings = get_settings()
-    if not settings.anthropic_api_key.strip():
-        if settings.environment == "development":
-            from app.services.dev_parser import dev_parse_transcript
+    use_dev_parser = settings.environment in ("development", "test") and (
+        not settings.anthropic_api_key.strip() or settings.anthropic_api_key.startswith("test-")
+    )
+    if use_dev_parser:
+        from app.services.dev_parser import dev_parse_transcript
 
-            return dev_parse_transcript(transcript)
+        return dev_parse_transcript(transcript)
+    if not settings.anthropic_api_key.strip():
         raise ParseError("Anthropic API key is not configured")
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     message = client.messages.create(
@@ -113,6 +119,7 @@ def parse_transcript(transcript: str) -> tuple[list[ParsedEntry], str, bool]:
                     item_description=str(item["item_description"])[:255],
                     amount_kes=amount.quantize(Decimal("0.01")),
                     counterparty_name=item.get("counterparty_name"),
+                    payment_method=PaymentMethod(item.get("payment_method", PaymentMethod.cash.value)),
                     is_settled=bool(item.get("is_settled", True)),
                 )
             )

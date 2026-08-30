@@ -21,8 +21,15 @@ class EntryType(str, PyEnum):
     credit_repaid = "credit_repaid"
 
 
+class PaymentMethod(str, PyEnum):
+    cash = "cash"
+    mpesa = "mpesa"
+    credit = "credit"
+
+
 # native_enum=False keeps SQLite tests working; values still constrained in Postgres via Alembic check.
 entry_type_enum = SAEnum(EntryType, name="entry_type", native_enum=False, validate_strings=True)
+payment_method_enum = SAEnum(PaymentMethod, name="payment_method", native_enum=False, validate_strings=True)
 
 
 class Trader(Base):
@@ -50,6 +57,9 @@ class LedgerEntry(Base):
     item_description: Mapped[str] = mapped_column(String(255), nullable=False)
     amount_kes: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     counterparty_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    payment_method: Mapped[PaymentMethod] = mapped_column(
+        payment_method_enum, nullable=False, default=PaymentMethod.cash
+    )
     is_settled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     raw_transcript: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

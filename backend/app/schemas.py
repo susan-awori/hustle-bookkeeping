@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models import EntryType
+from app.models import EntryType, PaymentMethod
 from app.security import PIN_RE, normalize_ke_phone
 
 
@@ -78,6 +78,7 @@ class ParsedEntry(StrictModel):
     item_description: str = Field(min_length=1, max_length=255)
     amount_kes: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
     counterparty_name: str | None = Field(default=None, max_length=120)
+    payment_method: PaymentMethod = PaymentMethod.cash
     is_settled: bool = True
 
 
@@ -99,6 +100,14 @@ class TranslateRequest(StrictModel):
     text: str = Field(min_length=1, max_length=4000)
 
 
+class ParseTextRequest(StrictModel):
+    text: str = Field(min_length=1, max_length=4000)
+
+
+class TranscribeResponse(StrictModel):
+    transcript: str
+
+
 class TranslateResponse(StrictModel):
     translation: str
 
@@ -110,9 +119,20 @@ class LedgerEntryPublic(StrictModel):
     item_description: str
     amount_kes: Decimal
     counterparty_name: str | None
+    payment_method: PaymentMethod
     is_settled: bool
     created_at: datetime
     model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class CreditOutstandingResponse(StrictModel):
+    items: list[LedgerEntryPublic]
+    total: int
+    amount_due_kes: Decimal
+
+
+class RepayCreditRequest(StrictModel):
+    payment_method: PaymentMethod = PaymentMethod.cash
 
 
 class LedgerListResponse(StrictModel):

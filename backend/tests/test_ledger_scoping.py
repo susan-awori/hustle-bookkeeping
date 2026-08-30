@@ -1,7 +1,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from app.models import EntryType
+from app.models import EntryType, PaymentMethod
 from app.repositories import ledger as ledger_repo
 
 
@@ -28,6 +28,7 @@ def test_ledger_is_scoped_to_authenticated_trader(client, db):
         item_description="sukuma",
         amount_kes=Decimal("50.00"),
         counterparty_name=None,
+        payment_method=PaymentMethod.cash,
         is_settled=True,
         raw_transcript="niliuza sukuma 50",
     )
@@ -38,6 +39,7 @@ def test_ledger_is_scoped_to_authenticated_trader(client, db):
         item_description="unga",
         amount_kes=Decimal("200.00"),
         counterparty_name=None,
+        payment_method=PaymentMethod.cash,
         is_settled=True,
         raw_transcript="nimenunua unga 200",
     )
