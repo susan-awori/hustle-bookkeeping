@@ -107,6 +107,7 @@ export default function App() {
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
   const recognitionRef = useRef(null);
+  const liveDraftRef = useRef("");
   const audioRef = useRef(null);
   const copy = COPY[language];
 
@@ -180,16 +181,29 @@ export default function App() {
       for (let i = 0; i < event.results.length; i += 1) {
         text += event.results[i][0].transcript + " ";
       }
-      setLiveDraft(text.trim());
+      const trimmed = text.trim();
+      liveDraftRef.current = trimmed;
+      setLiveDraft(trimmed);
     };
     rec.start();
     recognitionRef.current = rec;
   }
 
+  function stopLiveDraft() {
+    const rec = recognitionRef.current;
+    if (!rec) return Promise.resolve();
+    return new Promise((resolve) => {
+      const done = () => resolve();
+      rec.onend = done;
+      rec.stop();
+      window.setTimeout(done, 400);
+    });
+  }
+
   async function toggleMic() {
     setError("");
     if (recording) {
-      recognitionRef.current?.stop();
+      await stopLiveDraft();
       mediaRef.current?.stop();
       setRecording(false);
       return;
@@ -207,12 +221,15 @@ export default function App() {
         const data = new FormData();
         data.append("audio", blob, "take.webm");
         data.append("save_voice_notes", me?.save_voice_notes ? "true" : "false");
+        if (liveDraftRef.current) {
+          data.append("browser_transcript", liveDraftRef.current);
+        }
         setBusy(true);
         const response = await api("/api/v1/voice/parse", { method: "POST", body: data });
         const payload = await response.json().catch(() => ({}));
         setBusy(false);
         if (!response.ok) {
-          setError(payload.detail || copy.audioError);
+          setError(formatApiError(payload, copy.audioError));
           return;
         }
         setParseResult(payload);
@@ -230,6 +247,7 @@ export default function App() {
       startLiveDraft();
       setParseResult(null);
       setLiveDraft("");
+      liveDraftRef.current = "";
       setRecording(true);
     } catch {
       setError(copy.micError);
